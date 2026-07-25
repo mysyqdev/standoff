@@ -28,6 +28,8 @@ Game for GMTK 2026 Game Jam
 - [ ] !! Add music
 - [ ] !! Add SFX
 - [ ] !!! Finish gameplay UI
+    - [ ] Countdown opacity change at random time
+    - [ ] Shoot time error display
 - [ ] ? Change countdown to random metronome
 
 

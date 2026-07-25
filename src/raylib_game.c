@@ -57,7 +57,11 @@ static RenderTexture2D target = { 0 };  // Render texture to render our game
 static int frameCounter = 0;
 
 // TODO: Define global variables here, recommended to make them static
-static float countdown = 10.0f;
+static float countdown;
+static float countdownMax;
+static float timeToFullOpacity;
+static float opacityCount;
+static int countdownOpacity = 255;
 static bool shouldStartCountdown = false;
 static float startTime;
 static float enemyShootTime;
@@ -88,7 +92,11 @@ int main(void)
     InitWindow(screenWidth, screenHeight, "raylib gamejam template");
     
     // TODO: Load resources / Initialize variables at this point
-    enemyShootTime = 9.0f + ((float)GetRandomValue(0, 10000) / 10000.0f) * 2.0f;
+    countdownMax = (float)GetRandomValue(6, 12);
+    countdown = countdownMax;
+    timeToFullOpacity = 4.0f;
+    opacityCount = countdownMax - 1.0f;
+    enemyShootTime = (countdownMax - 1) + ((float)GetRandomValue(0, 10000) / 10000.0f) * 2.0f;
     grassImg = LoadTexture("resources/grass.png");
     gameScreen = SCREEN_TITLE;
     
@@ -145,6 +153,8 @@ void UpdateDrawFrame(void)
         case SCREEN_GAMEPLAY:
             UpdateGameLoop(dt);
             break;
+        case SCREEN_ENDING:
+            break;
         default:
             LOG("default\n");
             break;
@@ -164,7 +174,7 @@ void UpdateDrawFrame(void)
         DrawTexture(grassImg, 0, 82, WHITE);
         if (shouldStartCountdown)
         {
-            DrawText(TextFormat("%d", (int)ceil(countdown)), 50, 50, 20, BLACK);
+            DrawText(TextFormat("%d", (int)ceil(countdown)), virtualWidth / 2 - MeasureText(TextFormat("%d", (int)ceil(countdown)), 20) / 2, 20, 20, (Color){0,0,0,countdownOpacity});
         }
         
     EndTextureMode();
@@ -182,10 +192,16 @@ void UpdateDrawFrame(void)
         {
         case SCREEN_TITLE:
             DrawText("STANDOFF", screenWidth / 2 - MeasureText("STANDOFF", 100) / 2, screenHeight / 2 - 100 * 2, 100, BLACK);
-            DrawText("press SPACE to start", screenWidth / 2 - MeasureText("press SPACE to start", 40) / 2, screenHeight / 2 - 90, 40, BLACK);
+            DrawText("press SPACE to play", screenWidth / 2 - MeasureText("press SPACE to start", 40) / 2, screenHeight / 2 - 90, 40, BLACK);
             DrawText("made by mysyq", screenWidth / 2 - MeasureText("made by mysyq", 40) / 2, 105 * windowScale, 40, ORANGE);
             DrawText("music by MurMurich", screenWidth / 2 - MeasureText("music by MurMurich", 40) / 2, 113 * windowScale, 40, ORANGE);
             break;
+
+        case SCREEN_GAMEPLAY:
+            if (!shouldStartCountdown)
+            {
+                DrawText("hold SPACE to countdown", screenWidth / 2 - MeasureText("hold SPACE to countdown", 40) / 2, screenHeight / 4, 40, BLACK);
+            }
 
         default:
             break;
@@ -213,20 +229,23 @@ void UpdateGameLoop(float dt)
         LOG("Player shoot time: %f\n", playerShootTime);
         LOG("Enemy shoot time: %f\n", enemyShootTime);
 
-        float playerTimeDif = fabsf(10.0f - playerShootTime);
-        float enemyTimeDif = fabsf(10.0f - enemyShootTime);
+        float playerTimeDif = fabsf(countdownMax - playerShootTime);
+        float enemyTimeDif = fabsf(countdownMax - enemyShootTime);
         LOG("player time difference: %f\n", playerTimeDif);
         LOG("enemy time dif: %f\n", enemyTimeDif);
 
-        if (playerTimeDif < enemyTimeDif)
-        {
-            // change gamestate
-        }
+        gameScreen = SCREEN_ENDING;
     }
     
     if (shouldStartCountdown)
     {
         countdown -= dt;
+        if (countdown < opacityCount)
+        {
+            countdownOpacity -= 70;
+            if (countdownOpacity < 0) countdownOpacity = 0;
+            opacityCount--;
+        }
     }
    
     frameCounter++;
