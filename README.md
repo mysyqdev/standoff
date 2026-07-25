@@ -24,11 +24,10 @@ Game for GMTK 2026 Game Jam
 
 - [ ] ! Grass animation
 - [ ] ! Birds background animation
+- [ ] ! Gunslingers animation
 - [ ] !! Add music
 - [ ] !! Add SFX
-- [ ] !! Gunslingers animation
 - [ ] !!! Finish gameplay UI
-- [ ] 
 - [ ] ? Change countdown to random metronome
 
 
