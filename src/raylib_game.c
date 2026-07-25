@@ -18,6 +18,7 @@
 #include <stdio.h>                          // Required for: printf()
 #include <stdlib.h>                         // Required for: 
 #include <string.h>                         // Required for:
+#include <math.h>
 
 //----------------------------------------------------------------------------------
 // Defines and Macros
@@ -56,6 +57,11 @@ static RenderTexture2D target = { 0 };  // Render texture to render our game
 static int frameCounter = 0;
 
 // TODO: Define global variables here, recommended to make them static
+static float countdown = 10.0f;
+static bool shouldStartCountdown = false;
+static float startTime;
+static float enemyShootTime;
+
 
 //----------------------------------------------------------------------------------
 // Module Functions Declaration
@@ -76,6 +82,7 @@ int main(void)
     InitWindow(screenWidth, screenHeight, "raylib gamejam template");
     
     // TODO: Load resources / Initialize variables at this point
+    enemyShootTime = 9.0f + ((float)GetRandomValue(0, 10000) / 10000.0f) * 2.0f;
     
     // Render texture to draw, enables screen scaling
     // NOTE: If screen is scaled, mouse input should be scaled proportionally
@@ -116,6 +123,39 @@ void UpdateDrawFrame(void)
     // Update
     //----------------------------------------------------------------------------------
     // TODO: Update variables / Implement example logic at this point
+    float dt = GetFrameTime();
+
+    if (IsKeyPressed(KEY_SPACE))
+    {
+        shouldStartCountdown = true;
+        startTime = GetTime();
+        LOG("Start time: %f\n", startTime);
+    }
+
+    if (IsKeyReleased(KEY_SPACE))
+    {
+        shouldStartCountdown = false;
+        float shootTime = GetTime();
+        float playerShootTime = shootTime - startTime;
+        LOG("Shoot time: %f\n", shootTime);
+        LOG("Player shoot time: %f\n", playerShootTime);
+        LOG("Enemy shoot time: %f\n", enemyShootTime);
+
+        float playerTimeDif = fabsf(10.0f - playerShootTime);
+        float enemyTimeDif = fabsf(10.0f - enemyShootTime);
+        LOG("player time difference: %f\n", playerTimeDif);
+        LOG("enemy time dif: %f\n", enemyTimeDif);
+
+        if (playerTimeDif < enemyTimeDif)
+        {
+            // change gamestate
+        }
+    }
+    
+    if (shouldStartCountdown)
+    {
+        countdown -= dt;
+    }
    
     frameCounter++;
     //----------------------------------------------------------------------------------
@@ -129,6 +169,10 @@ void UpdateDrawFrame(void)
         
         // TODO: Draw your game screen here
         DrawRectangle(2, 2, 124, 124, RED);
+        if (shouldStartCountdown)
+        {
+            DrawText(TextFormat("%d", (int)ceil(countdown)), 50, 50, 20, BLACK);
+        }
         
     EndTextureMode();
     
