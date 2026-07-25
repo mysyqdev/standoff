@@ -62,6 +62,8 @@ static bool shouldStartCountdown = false;
 static float startTime;
 static float enemyShootTime;
 
+static GameScreen gameScreen;
+
 // Assets
 static Texture2D grassImg;
 
@@ -70,6 +72,7 @@ static Texture2D grassImg;
 // Module Functions Declaration
 //----------------------------------------------------------------------------------
 static void UpdateDrawFrame(void);      // Update and Draw one frame
+static void UpdateGameLoop(float);
 
 //------------------------------------------------------------------------------------
 // Program main entry point
@@ -87,6 +90,7 @@ int main(void)
     // TODO: Load resources / Initialize variables at this point
     enemyShootTime = 9.0f + ((float)GetRandomValue(0, 10000) / 10000.0f) * 2.0f;
     grassImg = LoadTexture("resources/grass.png");
+    gameScreen = SCREEN_TITLE;
     
     // Render texture to draw, enables screen scaling
     // NOTE: If screen is scaled, mouse input should be scaled proportionally
@@ -130,6 +134,69 @@ void UpdateDrawFrame(void)
     // TODO: Update variables / Implement example logic at this point
     float dt = GetFrameTime();
 
+    switch (gameScreen)
+    {
+        case SCREEN_TITLE:
+            if (IsKeyReleased(KEY_SPACE))
+            {
+                gameScreen = SCREEN_GAMEPLAY;
+            }
+            break;
+        case SCREEN_GAMEPLAY:
+            UpdateGameLoop(dt);
+            break;
+        default:
+            LOG("default\n");
+            break;
+    }
+    
+    //----------------------------------------------------------------------------------
+
+    // Draw
+    //----------------------------------------------------------------------------------
+    // Render game screen to a texture, 
+    // it could be useful for scaling or further shader postprocessing
+    BeginTextureMode(target);
+        ClearBackground(ORANGE);
+        
+        // TODO: Draw your game screen here
+        DrawRectangle(0, 96, 128, 32, BLACK);
+        DrawTexture(grassImg, 0, 82, WHITE);
+        if (shouldStartCountdown)
+        {
+            DrawText(TextFormat("%d", (int)ceil(countdown)), 50, 50, 20, BLACK);
+        }
+        
+    EndTextureMode();
+    
+    // Render to screen (main framebuffer)
+    BeginDrawing();
+        ClearBackground(RAYWHITE);
+        
+        // Draw render texture to screen, scaled if required
+        DrawTexturePro(target.texture, (Rectangle){ 0, 0, (float)target.texture.width, -(float)target.texture.height }, 
+            (Rectangle){ 0, 0, (float)screenWidth, (float)screenHeight }, (Vector2){ 0, 0 }, 0.0f, WHITE);
+
+        // TODO: Draw everything that requires to be drawn at this point, maybe UI?
+        switch (gameScreen)
+        {
+        case SCREEN_TITLE:
+            DrawText("STANDOFF", screenWidth / 2 - MeasureText("STANDOFF", 100) / 2, screenHeight / 2 - 100 * 2, 100, BLACK);
+            DrawText("press SPACE to start", screenWidth / 2 - MeasureText("press SPACE to start", 40) / 2, screenHeight / 2 - 90, 40, BLACK);
+            DrawText("made by mysyq", screenWidth / 2 - MeasureText("made by mysyq", 40) / 2, 105 * windowScale, 40, ORANGE);
+            DrawText("music by MurMurich", screenWidth / 2 - MeasureText("music by MurMurich", 40) / 2, 113 * windowScale, 40, ORANGE);
+            break;
+
+        default:
+            break;
+        }
+
+    EndDrawing();
+    //----------------------------------------------------------------------------------  
+}
+
+void UpdateGameLoop(float dt)
+{
     if (IsKeyPressed(KEY_SPACE))
     {
         shouldStartCountdown = true;
@@ -163,35 +230,4 @@ void UpdateDrawFrame(void)
     }
    
     frameCounter++;
-    //----------------------------------------------------------------------------------
-
-    // Draw
-    //----------------------------------------------------------------------------------
-    // Render game screen to a texture, 
-    // it could be useful for scaling or further shader postprocessing
-    BeginTextureMode(target);
-        ClearBackground(ORANGE);
-        
-        // TODO: Draw your game screen here
-        DrawRectangle(0, 96, 128, 32, BLACK);
-        DrawTexture(grassImg, 0, 82, WHITE);
-        if (shouldStartCountdown)
-        {
-            DrawText(TextFormat("%d", (int)ceil(countdown)), 50, 50, 20, BLACK);
-        }
-        
-    EndTextureMode();
-    
-    // Render to screen (main framebuffer)
-    BeginDrawing();
-        ClearBackground(RAYWHITE);
-        
-        // Draw render texture to screen, scaled if required
-        DrawTexturePro(target.texture, (Rectangle){ 0, 0, (float)target.texture.width, -(float)target.texture.height }, 
-            (Rectangle){ 0, 0, (float)screenWidth, (float)screenHeight }, (Vector2){ 0, 0 }, 0.0f, WHITE);
-
-        // TODO: Draw everything that requires to be drawn at this point, maybe UI?
-
-    EndDrawing();
-    //----------------------------------------------------------------------------------  
 }
