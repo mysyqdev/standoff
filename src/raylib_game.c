@@ -62,6 +62,9 @@ static bool shouldStartCountdown = false;
 static float startTime;
 static float enemyShootTime;
 
+// Assets
+static Texture2D grassImg;
+
 
 //----------------------------------------------------------------------------------
 // Module Functions Declaration
@@ -83,6 +86,7 @@ int main(void)
     
     // TODO: Load resources / Initialize variables at this point
     enemyShootTime = 9.0f + ((float)GetRandomValue(0, 10000) / 10000.0f) * 2.0f;
+    grassImg = LoadTexture("resources/grass.png");
     
     // Render texture to draw, enables screen scaling
     // NOTE: If screen is scaled, mouse input should be scaled proportionally
@@ -105,6 +109,7 @@ int main(void)
     // De-Initialization
     //--------------------------------------------------------------------------------------
     UnloadRenderTexture(target);
+    UnloadTexture(grassImg);
     
     // TODO: Unload all loaded resources at this point
 
@@ -169,6 +174,7 @@ void UpdateDrawFrame(void)
         
         // TODO: Draw your game screen here
         DrawRectangle(0, 96, 128, 32, BLACK);
+        DrawTexture(grassImg, 0, 82, WHITE);
         if (shouldStartCountdown)
         {
             DrawText(TextFormat("%d", (int)ceil(countdown)), 50, 50, 20, BLACK);
