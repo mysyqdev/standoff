@@ -165,10 +165,10 @@ void UpdateDrawFrame(void)
     // Render game screen to a texture, 
     // it could be useful for scaling or further shader postprocessing
     BeginTextureMode(target);
-        ClearBackground(RAYWHITE);
+        ClearBackground(ORANGE);
         
         // TODO: Draw your game screen here
-        DrawRectangle(2, 2, 124, 124, RED);
+        DrawRectangle(0, 96, 128, 32, BLACK);
         if (shouldStartCountdown)
         {
             DrawText(TextFormat("%d", (int)ceil(countdown)), 50, 50, 20, BLACK);
