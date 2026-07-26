@@ -76,6 +76,7 @@ static bool isPlayerWinner;
 
 static bool shouldShowEnding;
 static float timer;
+static bool didPlayerShoot;
 
 static GameScreen gameScreen;
 
@@ -125,6 +126,7 @@ int main(void)
 
     gameScreen = SCREEN_TITLE;
     isPlayerWinner = false;
+    didPlayerShoot = false;
 
     grassImg = LoadTexture("resources/grass.png");
     cowboyR1 = LoadTexture("resources/cowboyr1.png");
@@ -290,7 +292,6 @@ void UpdateGameLoop(float dt)
 
     if (IsKeyReleased(KEY_SPACE))
     {
-        shouldStartCountdown = false;
         float shootTime = GetTime();
         float playerShootTime = shootTime - startTime;
         LOG("Shoot time: %f\n", shootTime);
@@ -305,7 +306,21 @@ void UpdateGameLoop(float dt)
 
         PlaySound(shootSound2);
 
-        shouldShowEnding = true;
+        didPlayerShoot = true;
+    }
+
+    if (didPlayerShoot && didEnemyShoot)
+    {
+        timer += dt;
+        shouldStartCountdown = false;
+        if (timer >= 1.0f)
+        {
+            if (isPlayerWinner) PlaySound(victorySound);
+            else PlaySound(defeatSound);
+            LOG("Switch to SCREEN_ENDING\n");
+            gameScreen = SCREEN_ENDING;
+            shouldShowEnding = false;
+        }
     }
     
     if (shouldStartCountdown)
@@ -320,23 +335,10 @@ void UpdateGameLoop(float dt)
 
         
         enemyCountdown -= dt;
-        if (enemyCountdown <= 0.0f && !didEnemyShoot)
+        if (enemyCountdown <= 0.0f)
         {
             PlaySound(shootSound1);
             didEnemyShoot = true;
-        }
-    }
-
-    if (shouldShowEnding)
-    {
-        timer += dt;
-        if (timer >= 1.0f)
-        {
-            LOG("PLAY SOUNDS\n");
-            if (isPlayerWinner) PlaySound(victorySound);
-            else PlaySound(defeatSound);
-            gameScreen = SCREEN_ENDING;
-            shouldShowEnding = false;
         }
     }
    
