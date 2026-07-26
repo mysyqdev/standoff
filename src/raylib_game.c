@@ -74,6 +74,9 @@ static float enemyTimeDif;
 static bool didEnemyShoot;
 static bool isPlayerWinner;
 
+static bool shouldShowEnding;
+static float timer;
+
 static GameScreen gameScreen;
 
 // Assets
@@ -116,6 +119,9 @@ int main(void)
     enemyShootTime = (countdownMax - 1) + ((float)GetRandomValue(0, 10000) / 10000.0f) * 2.0f;
     enemyCountdown = enemyShootTime;
     didEnemyShoot = false;
+
+    shouldShowEnding = false;
+    timer = 0.0f;
 
     gameScreen = SCREEN_TITLE;
     isPlayerWinner = false;
@@ -184,7 +190,6 @@ void UpdateDrawFrame(void)
     //----------------------------------------------------------------------------------
     // TODO: Update variables / Implement example logic at this point
     float dt = GetFrameTime();
-    // UpdateMusicStream(music);
 
     switch (gameScreen)
     {
@@ -194,19 +199,19 @@ void UpdateDrawFrame(void)
                 gameScreen = SCREEN_GAMEPLAY;
             }
             break;
+
         case SCREEN_GAMEPLAY:
             UpdateGameLoop(dt);
             break;
-        case SCREEN_ENDING:
-            if (isPlayerWinner) PlaySound(victorySound);
-            else PlaySound(defeatSound);
 
+        case SCREEN_ENDING:
             if (IsKeyPressed(KEY_SPACE))
             {
                 // restart game
                 gameScreen = SCREEN_GAMEPLAY;
             }
             break;
+
         default:
             LOG("default\n");
             break;
@@ -254,7 +259,7 @@ void UpdateDrawFrame(void)
             break;
 
         case SCREEN_GAMEPLAY:
-            if (!shouldStartCountdown)
+            if (!shouldStartCountdown && !shouldShowEnding)
             {
                 DrawText("hold SPACE to countdown", screenWidth / 2 - MeasureText("hold SPACE to countdown", 40) / 2, screenHeight / 4, 40, BLACK);
             }
@@ -300,7 +305,7 @@ void UpdateGameLoop(float dt)
 
         PlaySound(shootSound2);
 
-        gameScreen = SCREEN_ENDING;
+        shouldShowEnding = true;
     }
     
     if (shouldStartCountdown)
@@ -319,6 +324,19 @@ void UpdateGameLoop(float dt)
         {
             PlaySound(shootSound1);
             didEnemyShoot = true;
+        }
+    }
+
+    if (shouldShowEnding)
+    {
+        timer += dt;
+        if (timer >= 1.0f)
+        {
+            LOG("PLAY SOUNDS\n");
+            if (isPlayerWinner) PlaySound(victorySound);
+            else PlaySound(defeatSound);
+            gameScreen = SCREEN_ENDING;
+            shouldShowEnding = false;
         }
     }
    
