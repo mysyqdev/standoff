@@ -62,9 +62,9 @@ static float countdownMax;
 
 static float timeToFullOpacity;
 static float opacityCount;
-static int countdownOpacity = 255;
+static int countdownOpacity;
 
-static bool shouldStartCountdown = false;
+static bool shouldStartCountdown;
 static float startTime;
 static float enemyShootTime;
 static float enemyCountdown;
@@ -100,6 +100,7 @@ static Sound shootSound2;
 //----------------------------------------------------------------------------------
 static void UpdateDrawFrame(void);      // Update and Draw one frame
 static void UpdateGameLoop(float);
+static void ResetGame(void);
 
 //------------------------------------------------------------------------------------
 // Program main entry point
@@ -112,24 +113,13 @@ int main(void)
 
     // Initialization
     //--------------------------------------------------------------------------------------
-    InitWindow(screenWidth, screenHeight, "raylib gamejam template");
+    InitWindow(screenWidth, screenHeight, "STANDOFF");
     InitAudioDevice();
     
     // TODO: Load resources / Initialize variables at this point
-    countdownMax = (float)GetRandomValue(6, 12);
-    countdown = countdownMax;
+    ResetGame();
     timeToFullOpacity = 4.0f;
-    opacityCount = countdownMax - 1.0f;
-    enemyShootTime = (countdownMax - 1) + ((float)GetRandomValue(0, 10000) / 10000.0f) * 2.0f;
-    enemyCountdown = enemyShootTime;
-    didEnemyShoot = false;
-
-    shouldShowEnding = false;
-    timer = 0.0f;
-
     gameScreen = SCREEN_TITLE;
-    isPlayerWinner = false;
-    didPlayerShoot = false;
 
     grassImg = LoadTexture("resources/grass.png");
     cowboyR1 = LoadTexture("resources/cowboyr1.png");
@@ -164,11 +154,12 @@ int main(void)
     // De-Initialization
     //--------------------------------------------------------------------------------------
     UnloadRenderTexture(target);
+    
+    // TODO: Unload all loaded resources at this point
     UnloadTexture(grassImg);
     UnloadTexture(cowboyR1);
     UnloadTexture(cowboyL1);
 
-    // UnloadMusicStream(music);
     UnloadSound(music);
     UnloadSound(victorySound);
     UnloadSound(defeatSound);
@@ -176,9 +167,6 @@ int main(void)
     UnloadSound(shootSound2);
 
     CloseAudioDevice();
-    
-    // TODO: Unload all loaded resources at this point
-
     CloseWindow();        // Close window and OpenGL context
     //--------------------------------------------------------------------------------------
 
@@ -210,9 +198,9 @@ void UpdateDrawFrame(void)
             break;
 
         case SCREEN_ENDING:
-            if (IsKeyPressed(KEY_SPACE))
+            if (IsKeyReleased(KEY_SPACE))
             {
-                // reset game
+                ResetGame();
                 gameScreen = SCREEN_GAMEPLAY;
             }
             break;
@@ -351,4 +339,22 @@ void UpdateGameLoop(float dt)
     }
    
     frameCounter++;
+}
+
+void ResetGame(void)
+{
+    countdownMax = (float)GetRandomValue(6, 12);
+    countdown = countdownMax;
+    enemyShootTime = (countdownMax - 1) + ((float)GetRandomValue(0, 10000) / 10000.0f) * 2.0f;
+    enemyCountdown = enemyShootTime;
+    didEnemyShoot = false;
+    countdownOpacity = 255;
+    opacityCount = countdownMax - 1.0f;
+
+    shouldStartCountdown = false;
+    shouldShowEnding = false;
+    timer = 0.0f;
+
+    isPlayerWinner = false;
+    didPlayerShoot = false;
 }
