@@ -67,9 +67,11 @@ static int countdownOpacity = 255;
 static bool shouldStartCountdown = false;
 static float startTime;
 static float enemyShootTime;
+static float enemyCountdown;
 
 static float playerTimeDif;
 static float enemyTimeDif;
+static bool didEnemyShoot;
 static bool isPlayerWinner;
 
 static GameScreen gameScreen;
@@ -78,6 +80,12 @@ static GameScreen gameScreen;
 static Texture2D grassImg;
 static Texture2D cowboyR1;
 static Texture2D cowboyL1;
+
+static Sound music;
+static Sound victorySound;
+static Sound defeatSound;
+static Sound shootSound1;
+static Sound shootSound2;
 
 
 //----------------------------------------------------------------------------------
@@ -98,6 +106,7 @@ int main(void)
     // Initialization
     //--------------------------------------------------------------------------------------
     InitWindow(screenWidth, screenHeight, "raylib gamejam template");
+    InitAudioDevice();
     
     // TODO: Load resources / Initialize variables at this point
     countdownMax = (float)GetRandomValue(6, 12);
@@ -105,6 +114,8 @@ int main(void)
     timeToFullOpacity = 4.0f;
     opacityCount = countdownMax - 1.0f;
     enemyShootTime = (countdownMax - 1) + ((float)GetRandomValue(0, 10000) / 10000.0f) * 2.0f;
+    enemyCountdown = enemyShootTime;
+    didEnemyShoot = false;
 
     gameScreen = SCREEN_TITLE;
     isPlayerWinner = false;
@@ -112,6 +123,14 @@ int main(void)
     grassImg = LoadTexture("resources/grass.png");
     cowboyR1 = LoadTexture("resources/cowboyr1.png");
     cowboyL1 = LoadTexture("resources/cowboyl1.png");
+
+    music = LoadSound("resources/music.mp3");
+    victorySound = LoadSound("resources/victory.mp3");
+    defeatSound = LoadSound("resources/defeat.mp3");
+    shootSound1 = LoadSound("resources/explosion1.wav");
+    shootSound2 = LoadSound("resources/explosion2.wav");
+
+    PlaySound(music);
     
     // Render texture to draw, enables screen scaling
     // NOTE: If screen is scaled, mouse input should be scaled proportionally
@@ -137,6 +156,15 @@ int main(void)
     UnloadTexture(grassImg);
     UnloadTexture(cowboyR1);
     UnloadTexture(cowboyL1);
+
+    // UnloadMusicStream(music);
+    UnloadSound(music);
+    UnloadSound(victorySound);
+    UnloadSound(defeatSound);
+    UnloadSound(shootSound1);
+    UnloadSound(shootSound2);
+
+    CloseAudioDevice();
     
     // TODO: Unload all loaded resources at this point
 
@@ -156,6 +184,7 @@ void UpdateDrawFrame(void)
     //----------------------------------------------------------------------------------
     // TODO: Update variables / Implement example logic at this point
     float dt = GetFrameTime();
+    // UpdateMusicStream(music);
 
     switch (gameScreen)
     {
@@ -169,6 +198,9 @@ void UpdateDrawFrame(void)
             UpdateGameLoop(dt);
             break;
         case SCREEN_ENDING:
+            if (isPlayerWinner) PlaySound(victorySound);
+            else PlaySound(defeatSound);
+
             if (IsKeyPressed(KEY_SPACE))
             {
                 // restart game
@@ -266,6 +298,8 @@ void UpdateGameLoop(float dt)
         LOG("player time difference: %f\n", playerTimeDif);
         LOG("enemy time dif: %f\n", enemyTimeDif);
 
+        PlaySound(shootSound2);
+
         gameScreen = SCREEN_ENDING;
     }
     
@@ -277,6 +311,14 @@ void UpdateGameLoop(float dt)
             countdownOpacity -= 70;
             if (countdownOpacity < 0) countdownOpacity = 0;
             opacityCount--;
+        }
+
+        
+        enemyCountdown -= dt;
+        if (enemyCountdown <= 0.0f && !didEnemyShoot)
+        {
+            PlaySound(shootSound1);
+            didEnemyShoot = true;
         }
     }
    
