@@ -74,7 +74,6 @@ static float enemyTimeDif;
 static bool didEnemyShoot;
 static bool isPlayerWinner;
 
-static bool shouldShowEnding;
 static float timer;
 static bool didPlayerShoot;
 
@@ -84,9 +83,30 @@ static float playerShootTime;
 static GameScreen gameScreen;
 
 // Assets
-static Texture2D grassImg;
-static Texture2D cowboyR1;
-static Texture2D cowboyL1;
+static Texture2D grassSheet;
+static Vector2 grassPosition;
+static int grassFramesCounter;
+static int grassFramesSpeed;
+static bool grassGoesBack;
+static int grassCurrentFrame;
+static Rectangle grassFrameRec;
+
+
+static Texture2D cowboysSheet;
+static int cowboysStandingFrameSpeed;
+static int cowboysShootingFrameSpeed;
+static int cowboysFallingFrameSpeed;
+
+static Vector2 cowboyLeftPosition;
+static Rectangle cowboyLeftFrameRec;
+static int cowboyLeftCurrentFrame;
+static int cowboyLeftFrameCounter;
+
+static Vector2 cowboyRightPosition;
+static Rectangle cowboyRightFrameRec;
+static int cowboyRightCurrentFrame;
+static int cowboyRightFrameCounter;
+
 
 static Sound music;
 static Sound victorySound;
@@ -101,6 +121,8 @@ static Sound shootSound2;
 static void UpdateDrawFrame(void);      // Update and Draw one frame
 static void UpdateGameLoop(float);
 static void ResetGame(void);
+static void AnimateGrass(void);
+static void AnimateCowboys(void);
 
 //------------------------------------------------------------------------------------
 // Program main entry point
@@ -121,9 +143,24 @@ int main(void)
     timeToFullOpacity = 4.0f;
     gameScreen = SCREEN_TITLE;
 
-    grassImg = LoadTexture("resources/grass.png");
-    cowboyR1 = LoadTexture("resources/cowboyr1.png");
-    cowboyL1 = LoadTexture("resources/cowboyl1.png");
+    grassSheet = LoadTexture("resources/grassSheet.png");
+    grassPosition = (Vector2){0, 80};
+    grassFramesCounter = 0;
+    grassFramesSpeed = 2;
+    grassGoesBack = false;
+    grassCurrentFrame = 0;
+    grassFrameRec = (Rectangle){0, 0, grassSheet.width, grassSheet.height/3};
+
+    cowboysSheet = LoadTexture("resources/cowboysSheet.png");
+    cowboyLeftPosition = (Vector2){17,64};
+    cowboyRightPosition = (Vector2){65, 64};
+    cowboyLeftFrameCounter = 0;
+    cowboyRightFrameCounter = 0;
+    cowboysStandingFrameSpeed = 2;
+    cowboyLeftCurrentFrame = 0;
+    cowboyRightCurrentFrame = 0;
+    cowboyLeftFrameRec = (Rectangle){0, 0, 48, cowboysSheet.height/8};
+    cowboyRightFrameRec = (Rectangle){48, 0, 42, cowboysSheet.height/8};
 
     music = LoadSound("resources/music.mp3");
     victorySound = LoadSound("resources/victory.mp3");
@@ -156,9 +193,8 @@ int main(void)
     UnloadRenderTexture(target);
     
     // TODO: Unload all loaded resources at this point
-    UnloadTexture(grassImg);
-    UnloadTexture(cowboyR1);
-    UnloadTexture(cowboyL1);
+    UnloadTexture(grassSheet);
+    UnloadTexture(cowboysSheet);
 
     UnloadSound(music);
     UnloadSound(victorySound);
@@ -183,6 +219,9 @@ void UpdateDrawFrame(void)
     //----------------------------------------------------------------------------------
     // TODO: Update variables / Implement example logic at this point
     float dt = GetFrameTime();
+
+    AnimateGrass();
+    AnimateCowboys();
 
     switch (gameScreen)
     {
@@ -221,10 +260,16 @@ void UpdateDrawFrame(void)
         
         // TODO: Draw your game screen here
         DrawRectangle(0, 96, 128, 32, BLACK);
-        DrawTexture(grassImg, 0, 82, WHITE);
+        DrawTextureRec(grassSheet, grassFrameRec, grassPosition, WHITE);
 
-        DrawTexture(cowboyR1, 21, 64, WHITE);
-        DrawTexture(cowboyL1, 88, 64, WHITE);
+        // DrawTexture(cowboyR1, 21, 64, WHITE);
+        // DrawTexture(cowboyL1, 88, 64, WHITE);
+
+        if (gameScreen != SCREEN_TITLE)
+        {
+            DrawTextureRec(cowboysSheet, cowboyLeftFrameRec, cowboyLeftPosition, WHITE);
+            DrawTextureRec(cowboysSheet, cowboyRightFrameRec, cowboyRightPosition, WHITE);
+        }
 
         if (shouldStartCountdown)
         {
@@ -312,7 +357,6 @@ void UpdateGameLoop(float dt)
             else PlaySound(defeatSound);
             LOG("Switch to SCREEN_ENDING\n");
             gameScreen = SCREEN_ENDING;
-            shouldShowEnding = false;
         }
     }
     
@@ -352,9 +396,70 @@ void ResetGame(void)
     opacityCount = countdownMax - 1.0f;
 
     shouldStartCountdown = false;
-    shouldShowEnding = false;
     timer = 0.0f;
 
     isPlayerWinner = false;
     didPlayerShoot = false;
+}
+
+void AnimateGrass(void)
+{
+    grassFramesCounter++;
+    if (grassFramesCounter >= (60/grassFramesSpeed))
+    {
+        grassFramesCounter = 0;
+
+        if (grassGoesBack) grassCurrentFrame--;
+        else grassCurrentFrame++;
+
+        if (grassCurrentFrame == 2) grassGoesBack = true;
+        else if (grassCurrentFrame == 0) grassGoesBack = false;
+        
+
+        grassFrameRec.y = (float)grassCurrentFrame*(float)grassSheet.height/3;
+    }
+}
+
+void AnimateCowboys(void)
+{
+    cowboyLeftFrameCounter++;
+    cowboyRightFrameCounter++;
+
+    if (didPlayerShoot)
+    {
+        cowboyLeftCurrentFrame = 2;
+        if (cowboyLeftFrameCounter >= (60/cowboysShootingFrameSpeed))
+        {
+            cowboyLeftFrameCounter = 0;
+            cowboyLeftCurrentFrame = 3;
+        }
+    }
+
+    if (didEnemyShoot)
+    {
+        cowboyRightCurrentFrame = 2;
+        if (cowboyRightFrameCounter >= (60/cowboysShootingFrameSpeed))
+        {
+            cowboyRightFrameCounter = 0;
+            cowboyRightCurrentFrame = 3;
+        }
+    }
+
+    if (cowboyLeftFrameCounter >= (60/cowboysStandingFrameSpeed))
+    {
+        cowboyLeftFrameCounter = 0;
+        cowboyRightFrameCounter = 0;
+
+        cowboyLeftCurrentFrame++;
+        cowboyRightCurrentFrame++;
+
+        if (cowboyLeftCurrentFrame > 1 && cowboyRightCurrentFrame > 1)
+        {
+            cowboyLeftCurrentFrame = 0;
+            cowboyRightCurrentFrame = 0;
+        }
+    }
+
+    cowboyLeftFrameRec.y = (float)cowboyLeftCurrentFrame*(float)cowboysSheet.height/8;
+    cowboyRightFrameRec.y = (float)cowboyRightCurrentFrame*(float)cowboysSheet.height/8;
 }
