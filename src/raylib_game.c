@@ -78,6 +78,9 @@ static bool shouldShowEnding;
 static float timer;
 static bool didPlayerShoot;
 
+static float shootTime;
+static float playerShootTime;
+
 static GameScreen gameScreen;
 
 // Assets
@@ -209,7 +212,7 @@ void UpdateDrawFrame(void)
         case SCREEN_ENDING:
             if (IsKeyPressed(KEY_SPACE))
             {
-                // restart game
+                // reset game
                 gameScreen = SCREEN_GAMEPLAY;
             }
             break;
@@ -261,7 +264,7 @@ void UpdateDrawFrame(void)
             break;
 
         case SCREEN_GAMEPLAY:
-            if (!shouldStartCountdown && !shouldShowEnding)
+            if (!shouldStartCountdown && !didPlayerShoot)
             {
                 DrawText("hold SPACE to countdown", screenWidth / 2 - MeasureText("hold SPACE to countdown", 40) / 2, screenHeight / 4, 40, BLACK);
             }
@@ -292,29 +295,31 @@ void UpdateGameLoop(float dt)
 
     if (IsKeyReleased(KEY_SPACE))
     {
-        float shootTime = GetTime();
-        float playerShootTime = shootTime - startTime;
-        LOG("Shoot time: %f\n", shootTime);
-        LOG("Player shoot time: %f\n", playerShootTime);
-        LOG("Enemy shoot time: %f\n", enemyShootTime);
-
-        playerTimeDif = countdownMax - playerShootTime;
-        enemyTimeDif = countdownMax - enemyShootTime;
-        isPlayerWinner = (fabsf(playerTimeDif) < fabsf(enemyTimeDif)) ? true : false;
-        LOG("player time difference: %f\n", playerTimeDif);
-        LOG("enemy time dif: %f\n", enemyTimeDif);
+        shootTime = GetTime();
+        playerShootTime = shootTime - startTime;
+        
 
         PlaySound(shootSound2);
-
         didPlayerShoot = true;
+        LOG("Player SHOT\n");
     }
 
     if (didPlayerShoot && didEnemyShoot)
     {
         timer += dt;
         shouldStartCountdown = false;
-        if (timer >= 1.0f)
+        if (timer >= 2.0f)
         {
+            LOG("Shoot time: %f\n", shootTime);
+            LOG("Player shoot time: %f\n", playerShootTime);
+            LOG("Enemy shoot time: %f\n", enemyShootTime);
+
+            playerTimeDif = countdownMax - playerShootTime;
+            enemyTimeDif = countdownMax - enemyShootTime;
+            isPlayerWinner = (fabsf(playerTimeDif) < fabsf(enemyTimeDif)) ? true : false;
+            LOG("player time difference: %f\n", playerTimeDif);
+
+            LOG("enemy time dif: %f\n", enemyTimeDif);
             if (isPlayerWinner) PlaySound(victorySound);
             else PlaySound(defeatSound);
             LOG("Switch to SCREEN_ENDING\n");
@@ -333,12 +338,15 @@ void UpdateGameLoop(float dt)
             opacityCount--;
         }
 
-        
-        enemyCountdown -= dt;
-        if (enemyCountdown <= 0.0f)
+        if (!didEnemyShoot)
         {
-            PlaySound(shootSound1);
-            didEnemyShoot = true;
+            enemyCountdown -= dt;
+            if (enemyCountdown <= 0.0f)
+            {
+                LOG("ENEMY SHOT\n");
+                PlaySound(shootSound1);
+                didEnemyShoot = true;
+            }
         }
     }
    
