@@ -59,12 +59,18 @@ static int frameCounter = 0;
 // TODO: Define global variables here, recommended to make them static
 static float countdown;
 static float countdownMax;
+
 static float timeToFullOpacity;
 static float opacityCount;
 static int countdownOpacity = 255;
+
 static bool shouldStartCountdown = false;
 static float startTime;
 static float enemyShootTime;
+
+static float playerTimeDif;
+static float enemyTimeDif;
+static bool isPlayerWinner;
 
 static GameScreen gameScreen;
 
@@ -99,6 +105,7 @@ int main(void)
     enemyShootTime = (countdownMax - 1) + ((float)GetRandomValue(0, 10000) / 10000.0f) * 2.0f;
     grassImg = LoadTexture("resources/grass.png");
     gameScreen = SCREEN_TITLE;
+    isPlayerWinner = false;
     
     // Render texture to draw, enables screen scaling
     // NOTE: If screen is scaled, mouse input should be scaled proportionally
@@ -154,6 +161,11 @@ void UpdateDrawFrame(void)
             UpdateGameLoop(dt);
             break;
         case SCREEN_ENDING:
+            if (IsKeyPressed(KEY_SPACE))
+            {
+                // restart game
+                gameScreen = SCREEN_GAMEPLAY;
+            }
             break;
         default:
             LOG("default\n");
@@ -202,6 +214,13 @@ void UpdateDrawFrame(void)
             {
                 DrawText("hold SPACE to countdown", screenWidth / 2 - MeasureText("hold SPACE to countdown", 40) / 2, screenHeight / 4, 40, BLACK);
             }
+            break;
+        
+        case SCREEN_ENDING:
+            if (playerTimeDif > 0) DrawText(TextFormat("+%.3f", playerTimeDif), 50, screenHeight / 2, 40, BLACK);
+            else DrawText(TextFormat("%.3f", playerTimeDif), 50, screenHeight / 2, 40, BLACK);
+            if (enemyTimeDif > 0) DrawText(TextFormat("+%.3f", enemyTimeDif), 600, screenHeight / 2, 40, BLACK);
+            else DrawText(TextFormat("%.3f", enemyTimeDif), 600, screenHeight / 2, 40, BLACK);
 
         default:
             break;
@@ -229,8 +248,9 @@ void UpdateGameLoop(float dt)
         LOG("Player shoot time: %f\n", playerShootTime);
         LOG("Enemy shoot time: %f\n", enemyShootTime);
 
-        float playerTimeDif = fabsf(countdownMax - playerShootTime);
-        float enemyTimeDif = fabsf(countdownMax - enemyShootTime);
+        playerTimeDif = countdownMax - playerShootTime;
+        enemyTimeDif = countdownMax - enemyShootTime;
+        isPlayerWinner = (fabsf(playerTimeDif) < fabsf(enemyTimeDif)) ? true : false;
         LOG("player time difference: %f\n", playerTimeDif);
         LOG("enemy time dif: %f\n", enemyTimeDif);
 
