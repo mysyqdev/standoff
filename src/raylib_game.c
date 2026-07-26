@@ -76,6 +76,8 @@ static GameScreen gameScreen;
 
 // Assets
 static Texture2D grassImg;
+static Texture2D cowboyR1;
+static Texture2D cowboyL1;
 
 
 //----------------------------------------------------------------------------------
@@ -103,9 +105,13 @@ int main(void)
     timeToFullOpacity = 4.0f;
     opacityCount = countdownMax - 1.0f;
     enemyShootTime = (countdownMax - 1) + ((float)GetRandomValue(0, 10000) / 10000.0f) * 2.0f;
-    grassImg = LoadTexture("resources/grass.png");
+
     gameScreen = SCREEN_TITLE;
     isPlayerWinner = false;
+
+    grassImg = LoadTexture("resources/grass.png");
+    cowboyR1 = LoadTexture("resources/cowboyr1.png");
+    cowboyL1 = LoadTexture("resources/cowboyl1.png");
     
     // Render texture to draw, enables screen scaling
     // NOTE: If screen is scaled, mouse input should be scaled proportionally
@@ -129,6 +135,8 @@ int main(void)
     //--------------------------------------------------------------------------------------
     UnloadRenderTexture(target);
     UnloadTexture(grassImg);
+    UnloadTexture(cowboyR1);
+    UnloadTexture(cowboyL1);
     
     // TODO: Unload all loaded resources at this point
 
@@ -184,6 +192,10 @@ void UpdateDrawFrame(void)
         // TODO: Draw your game screen here
         DrawRectangle(0, 96, 128, 32, BLACK);
         DrawTexture(grassImg, 0, 82, WHITE);
+
+        DrawTexture(cowboyR1, 21, 64, WHITE);
+        DrawTexture(cowboyL1, 88, 64, WHITE);
+
         if (shouldStartCountdown)
         {
             DrawText(TextFormat("%d", (int)ceil(countdown)), virtualWidth / 2 - MeasureText(TextFormat("%d", (int)ceil(countdown)), 20) / 2, 20, 20, (Color){0,0,0,countdownOpacity});
@@ -217,10 +229,10 @@ void UpdateDrawFrame(void)
             break;
         
         case SCREEN_ENDING:
-            if (playerTimeDif > 0) DrawText(TextFormat("+%.3f", playerTimeDif), 50, screenHeight / 2, 40, BLACK);
-            else DrawText(TextFormat("%.3f", playerTimeDif), 50, screenHeight / 2, 40, BLACK);
-            if (enemyTimeDif > 0) DrawText(TextFormat("+%.3f", enemyTimeDif), 600, screenHeight / 2, 40, BLACK);
-            else DrawText(TextFormat("%.3f", enemyTimeDif), 600, screenHeight / 2, 40, BLACK);
+            if (playerTimeDif > 0) DrawText(TextFormat("+%.3f", playerTimeDif), 100, screenHeight / 4, 40, BLACK);
+            else DrawText(TextFormat("%.3f", playerTimeDif), 100, screenHeight / 4, 40, BLACK);
+            if (enemyTimeDif > 0) DrawText(TextFormat("+%.3f", enemyTimeDif), 520, screenHeight / 4, 40, BLACK);
+            else DrawText(TextFormat("%.3f", enemyTimeDif), 520, screenHeight / 4, 40, BLACK);
 
         default:
             break;
