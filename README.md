@@ -22,9 +22,9 @@ Game for GMTK 2026 Game Jam
 
 ### TODO
 
-- [ ] ! Grass animation
+- [x] ! Grass animation
 - [ ] ! Birds background animation
-- [ ] ! Gunslingers animation
+- [x] ! Gunslingers animation
 - [x] !! Add music
 - [x] !! Add SFX
 - [x] !!! Finish gameplay UI
