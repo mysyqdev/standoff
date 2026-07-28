@@ -42,7 +42,29 @@ typedef enum {
     SCREEN_ENDING
 } GameScreen;
 
+typedef enum {
+    STANDING,
+    SHOT,
+    FALL,
+} CowboyState;
+
 // TODO: Define your custom data types here
+typedef struct Animation {
+    int firstFrame;
+    int lastFrame;
+    int frameSpeed;
+    bool isLooping;
+} Animation;
+
+typedef struct Cowboy {
+    Vector2 position;
+    Rectangle frameRec;
+    CowboyState state;
+    Animation animations[3];
+    int frameCounter;
+    int currentFrame;
+    float shootTime;
+} Cowboy;
 
 //----------------------------------------------------------------------------------
 // Global Variables Definition (local to this module)
@@ -54,31 +76,21 @@ static const int screenWidth = virtualWidth * windowScale;
 static const int screenHeight = virtualHeight * windowScale;
 
 static RenderTexture2D target = { 0 };  // Render texture to render our game
-static int frameCounter = 0;
 
 // TODO: Define global variables here, recommended to make them static
 static float countdown;
 static float countdownMax;
+static bool isCountingDown;
 
 static float timeToFullOpacity;
 static float opacityCount;
 static int countdownOpacity;
 
-static bool shouldStartCountdown;
 static float startTime;
-static float enemyShootTime;
-static float enemyCountdown;
+static float timer;
 
 static float playerTimeDif;
 static float enemyTimeDif;
-static bool didEnemyShoot;
-static bool isPlayerWinner;
-
-static float timer;
-static bool didPlayerShoot;
-
-static float shootTime;
-static float playerShootTime;
 
 static GameScreen gameScreen;
 
@@ -91,22 +103,9 @@ static bool grassGoesBack;
 static int grassCurrentFrame;
 static Rectangle grassFrameRec;
 
-
 static Texture2D cowboysSheet;
-static int cowboysStandingFrameSpeed;
-static int cowboysShootingFrameSpeed;
-static int cowboysFallingFrameSpeed;
-
-static Vector2 cowboyLeftPosition;
-static Rectangle cowboyLeftFrameRec;
-static int cowboyLeftCurrentFrame;
-static int cowboyLeftFrameCounter;
-
-static Vector2 cowboyRightPosition;
-static Rectangle cowboyRightFrameRec;
-static int cowboyRightCurrentFrame;
-static int cowboyRightFrameCounter;
-
+static Cowboy player;
+static Cowboy enemy;
 
 static Sound music;
 static Sound victorySound;
@@ -114,6 +113,9 @@ static Sound defeatSound;
 static Sound shootSound1;
 static Sound shootSound2;
 
+static Animation standingAnim;
+static Animation shotAnim;
+static Animation fallAnim;
 
 //----------------------------------------------------------------------------------
 // Module Functions Declaration
@@ -122,7 +124,7 @@ static void UpdateDrawFrame(void);      // Update and Draw one frame
 static void UpdateGameLoop(float);
 static void ResetGame(void);
 static void AnimateGrass(void);
-static void AnimateCowboys(void);
+static void AnimateCowboy(Cowboy* cowboy);
 
 //------------------------------------------------------------------------------------
 // Program main entry point
@@ -140,9 +142,10 @@ int main(void)
     
     // TODO: Load resources / Initialize variables at this point
     ResetGame();
-    timeToFullOpacity = 4.0f;
+    timeToFullOpacity = 4.0f; // Not opacity, but transparency 
     gameScreen = SCREEN_TITLE;
 
+    // Grass init
     grassSheet = LoadTexture("resources/grassSheet.png");
     grassPosition = (Vector2){0, 80};
     grassFramesCounter = 0;
@@ -151,16 +154,23 @@ int main(void)
     grassCurrentFrame = 0;
     grassFrameRec = (Rectangle){0, 0, grassSheet.width, grassSheet.height/3};
 
+    standingAnim = (Animation){0, 1, 2, true};
+    shotAnim = (Animation){2, 3, 40, false};
+    fallAnim = (Animation){4, 7, 2, false};
+
+    // Cowboys init
     cowboysSheet = LoadTexture("resources/cowboysSheet.png");
-    cowboyLeftPosition = (Vector2){17,64};
-    cowboyRightPosition = (Vector2){65, 64};
-    cowboyLeftFrameCounter = 0;
-    cowboyRightFrameCounter = 0;
-    cowboysStandingFrameSpeed = 2;
-    cowboyLeftCurrentFrame = 0;
-    cowboyRightCurrentFrame = 0;
-    cowboyLeftFrameRec = (Rectangle){0, 0, 48, cowboysSheet.height/8};
-    cowboyRightFrameRec = (Rectangle){48, 0, 42, cowboysSheet.height/8};
+    player.position = (Vector2){17,64};
+    player.frameRec = (Rectangle){0, 0, 48, cowboysSheet.height/8};
+    player.animations[0] = standingAnim;
+    player.animations[1] = shotAnim;
+    player.animations[2] = fallAnim;
+
+    enemy.position = (Vector2){65, 64};
+    enemy.frameRec = (Rectangle){48, 0, 42, cowboysSheet.height/8};
+    enemy.animations[0] = standingAnim;
+    enemy.animations[1] = shotAnim;
+    enemy.animations[2] = fallAnim;
 
     music = LoadSound("resources/music.mp3");
     victorySound = LoadSound("resources/victory.mp3");
@@ -221,7 +231,6 @@ void UpdateDrawFrame(void)
     float dt = GetFrameTime();
 
     AnimateGrass();
-    AnimateCowboys();
 
     switch (gameScreen)
     {
@@ -234,9 +243,13 @@ void UpdateDrawFrame(void)
 
         case SCREEN_GAMEPLAY:
             UpdateGameLoop(dt);
+            AnimateCowboy(&player);
+            AnimateCowboy(&enemy);
             break;
 
         case SCREEN_ENDING:
+            AnimateCowboy(&player);
+            AnimateCowboy(&enemy);
             if (IsKeyReleased(KEY_SPACE))
             {
                 ResetGame();
@@ -262,16 +275,13 @@ void UpdateDrawFrame(void)
         DrawRectangle(0, 96, 128, 32, BLACK);
         DrawTextureRec(grassSheet, grassFrameRec, grassPosition, WHITE);
 
-        // DrawTexture(cowboyR1, 21, 64, WHITE);
-        // DrawTexture(cowboyL1, 88, 64, WHITE);
-
         if (gameScreen != SCREEN_TITLE)
         {
-            DrawTextureRec(cowboysSheet, cowboyLeftFrameRec, cowboyLeftPosition, WHITE);
-            DrawTextureRec(cowboysSheet, cowboyRightFrameRec, cowboyRightPosition, WHITE);
+            DrawTextureRec(cowboysSheet, player.frameRec, player.position, WHITE);
+            DrawTextureRec(cowboysSheet, enemy.frameRec, enemy.position, WHITE);
         }
 
-        if (shouldStartCountdown)
+        if (isCountingDown)
         {
             DrawText(TextFormat("%d", (int)ceil(countdown)), virtualWidth / 2 - MeasureText(TextFormat("%d", (int)ceil(countdown)), 20) / 2, 20, 20, (Color){0,0,0,countdownOpacity});
         }
@@ -297,7 +307,7 @@ void UpdateDrawFrame(void)
             break;
 
         case SCREEN_GAMEPLAY:
-            if (!shouldStartCountdown && !didPlayerShoot)
+            if (!isCountingDown && player.state != SHOT)
             {
                 DrawText("hold SPACE to countdown", screenWidth / 2 - MeasureText("hold SPACE to countdown", 40) / 2, screenHeight / 4, 40, BLACK);
             }
@@ -308,6 +318,7 @@ void UpdateDrawFrame(void)
             else DrawText(TextFormat("%.3f", playerTimeDif), 100, screenHeight / 4, 40, BLACK);
             if (enemyTimeDif > 0) DrawText(TextFormat("+%.3f", enemyTimeDif), 520, screenHeight / 4, 40, BLACK);
             else DrawText(TextFormat("%.3f", enemyTimeDif), 520, screenHeight / 4, 40, BLACK);
+            DrawText("press SPACE to restart", screenWidth / 2 - MeasureText("press SPACE to restart", 40) / 2, screenHeight / 7, 40, BLACK);
 
         default:
             break;
@@ -319,87 +330,92 @@ void UpdateDrawFrame(void)
 
 void UpdateGameLoop(float dt)
 {
-    if (IsKeyPressed(KEY_SPACE))
+    if (IsKeyPressed(KEY_SPACE) && !isCountingDown)
     {
-        shouldStartCountdown = true;
+        isCountingDown = true;
         startTime = GetTime();
         LOG("Start time: %f\n", startTime);
     }
 
-    if (IsKeyReleased(KEY_SPACE))
+    if (IsKeyReleased(KEY_SPACE) && player.state != SHOT)
     {
-        shootTime = GetTime();
-        playerShootTime = shootTime - startTime;
+        player.shootTime = GetTime() - startTime;
         
-
         PlaySound(shootSound2);
-        didPlayerShoot = true;
+        player.state = SHOT;
         LOG("Player SHOT\n");
     }
-
-    if (didPlayerShoot && didEnemyShoot)
-    {
-        timer += dt;
-        shouldStartCountdown = false;
-        if (timer >= 2.0f)
-        {
-            LOG("Shoot time: %f\n", shootTime);
-            LOG("Player shoot time: %f\n", playerShootTime);
-            LOG("Enemy shoot time: %f\n", enemyShootTime);
-
-            playerTimeDif = countdownMax - playerShootTime;
-            enemyTimeDif = countdownMax - enemyShootTime;
-            isPlayerWinner = (fabsf(playerTimeDif) < fabsf(enemyTimeDif)) ? true : false;
-            LOG("player time difference: %f\n", playerTimeDif);
-
-            LOG("enemy time dif: %f\n", enemyTimeDif);
-            if (isPlayerWinner) PlaySound(victorySound);
-            else PlaySound(defeatSound);
-            LOG("Switch to SCREEN_ENDING\n");
-            gameScreen = SCREEN_ENDING;
-        }
-    }
     
-    if (shouldStartCountdown)
+    if (isCountingDown)
     {
         countdown -= dt;
         if (countdown < opacityCount)
         {
             countdownOpacity -= 70;
             if (countdownOpacity < 0) countdownOpacity = 0;
-            opacityCount--;
+            opacityCount--; // WHY?
         }
 
-        if (!didEnemyShoot)
+        if (enemy.state != SHOT)
         {
-            enemyCountdown -= dt;
-            if (enemyCountdown <= 0.0f)
+            if (enemy.shootTime <= (float)GetTime() - startTime)
             {
+                enemy.state = SHOT;
                 LOG("ENEMY SHOT\n");
                 PlaySound(shootSound1);
-                didEnemyShoot = true;
             }
         }
     }
-   
-    frameCounter++;
+
+    if (player.state == SHOT && enemy.state == SHOT)
+    {
+        timer += dt;
+        isCountingDown = false;
+        if (timer >= 2.0f)
+        {
+            LOG("Player shoot time: %f\n", player.shootTime);
+            LOG("Enemy shoot time: %f\n", enemy.shootTime);
+
+            playerTimeDif = -(countdownMax - player.shootTime);
+            enemyTimeDif = -(countdownMax - enemy.shootTime);
+            LOG("player time difference: %f\n", playerTimeDif);
+            LOG("enemy time dif: %f\n", enemyTimeDif);
+            
+            bool isPlayerWinner = (fabsf(playerTimeDif) < fabsf(enemyTimeDif)) ? true : false;
+            if (isPlayerWinner) 
+            {
+                PlaySound(victorySound);
+                enemy.state = FALL;
+            }
+            else 
+            {
+                player.state = FALL;
+                PlaySound(defeatSound);
+            }
+
+            LOG("Switch to SCREEN_ENDING\n");
+            gameScreen = SCREEN_ENDING;
+        }
+    }
 }
 
 void ResetGame(void)
 {
     countdownMax = (float)GetRandomValue(6, 12);
     countdown = countdownMax;
-    enemyShootTime = (countdownMax - 1) + ((float)GetRandomValue(0, 10000) / 10000.0f) * 2.0f;
-    enemyCountdown = enemyShootTime;
-    didEnemyShoot = false;
+    enemy.shootTime = (countdownMax - 1) + ((float)GetRandomValue(0, 10000) / 10000.0f) * 2.0f;
+
     countdownOpacity = 255;
     opacityCount = countdownMax - 1.0f;
 
-    shouldStartCountdown = false;
-    timer = 0.0f;
+    player.state = STANDING;
+    player.frameCounter = 0;
 
-    isPlayerWinner = false;
-    didPlayerShoot = false;
+    enemy.state = STANDING;
+    enemy.frameCounter = 0;
+
+    isCountingDown = false;
+    timer = 0.0f;
 }
 
 void AnimateGrass(void)
@@ -420,46 +436,28 @@ void AnimateGrass(void)
     }
 }
 
-void AnimateCowboys(void)
+void AnimateCowboy(Cowboy* cowboy)
 {
-    cowboyLeftFrameCounter++;
-    cowboyRightFrameCounter++;
+    cowboy->frameCounter++;
 
-    if (didPlayerShoot)
+    if (cowboy->frameCounter >= 60/cowboy->animations[cowboy->state].frameSpeed)
     {
-        cowboyLeftCurrentFrame = 2;
-        if (cowboyLeftFrameCounter >= (60/cowboysShootingFrameSpeed))
+        cowboy->currentFrame++;
+
+        if (cowboy->currentFrame > cowboy->animations[cowboy->state].lastFrame)
         {
-            cowboyLeftFrameCounter = 0;
-            cowboyLeftCurrentFrame = 3;
+            if (cowboy->animations[cowboy->state].isLooping)
+            {
+                cowboy->currentFrame = cowboy->animations[cowboy->state].firstFrame;
+            }
+            else
+            {
+                cowboy->currentFrame = cowboy->animations[cowboy->state].lastFrame;
+            }
         }
+
+        cowboy->frameCounter = 0;
     }
 
-    if (didEnemyShoot)
-    {
-        cowboyRightCurrentFrame = 2;
-        if (cowboyRightFrameCounter >= (60/cowboysShootingFrameSpeed))
-        {
-            cowboyRightFrameCounter = 0;
-            cowboyRightCurrentFrame = 3;
-        }
-    }
-
-    if (cowboyLeftFrameCounter >= (60/cowboysStandingFrameSpeed))
-    {
-        cowboyLeftFrameCounter = 0;
-        cowboyRightFrameCounter = 0;
-
-        cowboyLeftCurrentFrame++;
-        cowboyRightCurrentFrame++;
-
-        if (cowboyLeftCurrentFrame > 1 && cowboyRightCurrentFrame > 1)
-        {
-            cowboyLeftCurrentFrame = 0;
-            cowboyRightCurrentFrame = 0;
-        }
-    }
-
-    cowboyLeftFrameRec.y = (float)cowboyLeftCurrentFrame*(float)cowboysSheet.height/8;
-    cowboyRightFrameRec.y = (float)cowboyRightCurrentFrame*(float)cowboysSheet.height/8;
+    cowboy->frameRec.y = (float)cowboy->currentFrame*(float)cowboysSheet.height/8;
 }
