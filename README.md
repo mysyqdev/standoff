@@ -20,20 +20,6 @@ _Copyright (c) 2014-2026 Ramon Santamaria ([@raysan5](https://github.com/raysan5
 
 Game for GMTK 2026 Game Jam
 
-### TODO
-
-- [x] ! Grass animation
-- [ ] ! Birds background animation
-- [x] ! Gunslingers animation
-- [x] !! Add music
-- [x] !! Add SFX
-- [x] !!! Finish gameplay UI
-    - [x] Countdown opacity change at random time
-    - [x] Shoot time error display
-- [ ] ? Change countdown to random metronome
-
-
-
 ### Controls
 
 Keyboard:
