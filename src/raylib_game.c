@@ -66,6 +66,10 @@ typedef struct Cowboy {
     float shootTime;
 } Cowboy;
 
+typedef struct Entity {
+    int id;
+} Entity;
+
 //----------------------------------------------------------------------------------
 // Global Variables Definition (local to this module)
 //----------------------------------------------------------------------------------
