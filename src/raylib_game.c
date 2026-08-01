@@ -156,7 +156,7 @@ int main(void)
     grassFramesSpeed = 2;
     grassGoesBack = false;
     grassCurrentFrame = 0;
-    grassFrameRec = (Rectangle){0, 0, grassSheet.width, grassSheet.height/3};
+    grassFrameRec = (Rectangle){0, 0, grassSheet.width, grassSheet.height/3.0f};
 
     standingAnim = (Animation){0, 1, 2, true};
     shotAnim = (Animation){2, 3, 40, false};
@@ -165,13 +165,13 @@ int main(void)
     // Cowboys init
     cowboysSheet = LoadTexture("resources/cowboysSheet.png");
     player.position = (Vector2){17,64};
-    player.frameRec = (Rectangle){0, 0, 48, cowboysSheet.height/8};
+    player.frameRec = (Rectangle){0, 0, 48, cowboysSheet.height/8.0f};
     player.animations[0] = standingAnim;
     player.animations[1] = shotAnim;
     player.animations[2] = fallAnim;
 
     enemy.position = (Vector2){65, 64};
-    enemy.frameRec = (Rectangle){48, 0, 42, cowboysSheet.height/8};
+    enemy.frameRec = (Rectangle){48, 0, 42, cowboysSheet.height/8.0f};
     enemy.animations[0] = standingAnim;
     enemy.animations[1] = shotAnim;
     enemy.animations[2] = fallAnim;
@@ -183,7 +183,7 @@ int main(void)
     shootSound2 = LoadSound("resources/explosion2.wav");
 
     PlaySound(music);
-    
+
     // Render texture to draw, enables screen scaling
     // NOTE: If screen is scaled, mouse input should be scaled proportionally
     target = LoadRenderTexture(virtualWidth, virtualHeight);
@@ -265,7 +265,7 @@ void UpdateDrawFrame(void)
             LOG("default\n");
             break;
     }
-    
+
     //----------------------------------------------------------------------------------
 
     // Draw
