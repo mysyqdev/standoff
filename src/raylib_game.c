@@ -56,6 +56,12 @@ typedef struct Animation {
     bool isLooping;
 } Animation;
 
+typedef struct AnimationComponent {
+    Animation animation;
+    int frameCounter;
+    int currentFrame;
+} AnimationComponent;
+
 typedef struct Cowboy {
     Vector2 position;
     Rectangle frameRec;
